@@ -1,13 +1,23 @@
 
+const ajv = new Ajv({allErrors: true});
+const schema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
+const validate = (data) => ajv.validate(schema, data);
+
 const articlesContainer = document.querySelector('.articles__list');
 const input = document.querySelector('.article__form-input');
 const button = document.querySelector('.article__form-btn');
 const form = document.querySelector('.article__form');
-let isEmptyFieldError = false;
 
 const BUTTON_NODE_NAME = 'BUTTON';
-const VALIDATION_MESSAGE = 'Заполните поле'
-
 const articles = [
   {
     name: 'Lorem, ipsum dolor.',
@@ -42,29 +52,28 @@ const deleteArticle = (index, deletingNode) => {
   articlesContainer.removeChild(deletingNode);
 }
 
-const showValidatinMessage = () => {
-  if (!isEmptyFieldError) {
-    const validationElement = document.createElement('span');
-    validationElement.innerText = VALIDATION_MESSAGE;
-    validationElement.className = 'error';
-    form.insertBefore(validationElement, button);
-    isEmptyFieldError = true;
-  }
+const showValidatinMessage = (article) => {
+  const validationElement = document.createElement('span');
+  validationElement.innerText = ajv.errorsText();
+  validationElement.className = 'error';
+  form.insertBefore(validationElement, button);
 }
 
 const getErrorElementNode = () => form.querySelector('.error');
 
 const addArticle = () => {
   const article = {};
-  const articleName = input.value;
-  if (articleName) {
-    article.name = articleName;
+  article.name = input.value;
+  if (validate(article)) {
     articles.push(article);
     input.value = '';
     print(article);
     return;
   }
-  showValidatinMessage();
+  if (!!getErrorElementNode()) {
+    return;
+  }
+  showValidatinMessage(article);
 }
 
 button.addEventListener('click', (event) => {
@@ -73,9 +82,9 @@ button.addEventListener('click', (event) => {
 })
 
 input.addEventListener('input', () => {
-  if (isEmptyFieldError) {
-    form.removeChild(getErrorElementNode());
-    isEmptyFieldError = false;
+  const element = getErrorElementNode();
+  if (element) {
+    form.removeChild(element);
   }
 })
 
